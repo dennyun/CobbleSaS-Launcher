@@ -49,12 +49,15 @@ import java.io.IOException;
 import android.util.Log;
 import net.kdt.pojavlaunch.authenticator.accounts.Account;
 import net.kdt.pojavlaunch.utils.CobbleUpdater;
+import net.kdt.pojavlaunch.utils.RendererCompatUtil;
 import androidx.preference.PreferenceManager;
 
 import net.kdt.pojavlaunch.R;
 
 public class LauncherActivity extends BaseActivity {
     public static final String SETTING_FRAGMENT_TAG = "SETTINGS_FRAGMENT";
+    private static final int MIN_RAM_ALLOCATION = 512;
+    private static final String PREFERRED_RENDERER = "vulkan_zink";
 
     private com.kdt.mcgui.MineEditText mNicknameInput;
     private com.kdt.mcgui.MineButton mBtnPlay;
@@ -182,12 +185,12 @@ public class LauncherActivity extends BaseActivity {
 
     private void showRamDialog() {
         final android.content.SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        
-        // Calcula limites de memória
-        int deviceRam = Tools.getTotalDeviceMemory(this);
-        final int maxRAM = Math.min(8192, Math.round(deviceRam * 0.75f)); // 75% da RAM ou 8GB
+
+        // O heap não pode passar do que o aparelho consegue entregar agora: acima disso o
+        // Android mata o processo do jogo durante o carregamento do modpack.
+        final int maxRAM = Math.max(MIN_RAM_ALLOCATION, LauncherPreferences.findMaxSafeRAMAllocation(this));
         int savedRam = prefs.getInt("allocation", LauncherPreferences.findBestRAMAllocation(this));
-        final int currentSelectedRam = Math.min(savedRam, maxRAM);
+        final int currentSelectedRam = Math.max(MIN_RAM_ALLOCATION, Math.min(savedRam, maxRAM));
 
         android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_cobble_ram, null);
         final android.widget.TextView txtVal = dialogView.findViewById(R.id.dialog_ram_val);
@@ -195,13 +198,13 @@ public class LauncherActivity extends BaseActivity {
 
         txtVal.setText("Memória: " + String.format("%.1f GB", currentSelectedRam / 1024f) + " (" + currentSelectedRam + " MB)");
         
-        seekBar.setMax(maxRAM - 1024); // Desloca para garantir mínimo de 1GB
-        seekBar.setProgress(currentSelectedRam - 1024);
+        seekBar.setMax(maxRAM - MIN_RAM_ALLOCATION);
+        seekBar.setProgress(currentSelectedRam - MIN_RAM_ALLOCATION);
 
         seekBar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                int selectedVal = progress + 1024;
+                int selectedVal = progress + MIN_RAM_ALLOCATION;
                 txtVal.setText("Memória: " + String.format("%.1f GB", selectedVal / 1024f) + " (" + selectedVal + " MB)");
             }
 
@@ -215,8 +218,9 @@ public class LauncherActivity extends BaseActivity {
         new AlertDialog.Builder(this)
                 .setView(dialogView)
                 .setPositiveButton("Salvar", (dialog, which) -> {
-                    int finalRam = seekBar.getProgress() + 1024;
+                    int finalRam = seekBar.getProgress() + MIN_RAM_ALLOCATION;
                     prefs.edit().putInt("allocation", finalRam).apply();
+                    LauncherPreferences.PREF_RAM_ALLOCATION = finalRam;
                     Toast.makeText(this, "RAM configurada: " + finalRam + " MB", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancelar", null)
@@ -233,6 +237,10 @@ public class LauncherActivity extends BaseActivity {
         mBtnPlay.setEnabled(false);
         mNicknameInput.setEnabled(false);
         mProgressPanel.setVisibility(View.VISIBLE);
+
+        int ramAllocation = LauncherPreferences.clampRAMAllocation(this);
+        Log.i("CobbleLauncher", "RAM alocada: " + ramAllocation + " MB (livre: " + Tools.getFreeDeviceMemory(this)
+                + " MB, total: " + Tools.getTotalDeviceMemory(this) + " MB)");
 
         // 1. Logar localmente (Salvar usuário)
         try {
@@ -292,7 +300,7 @@ public class LauncherActivity extends BaseActivity {
 
             // Atualiza a versão ID da instância para condizer com o Modpack instalado e define o renderizador Vulkan/Zink
             selectedInstance.versionId = selectedVersion;
-            selectedInstance.renderer = "vulkan_zink";
+            selectedInstance.renderer = pickRenderer(selectedInstance.renderer);
             selectedInstance.write();
 
             // Dispara o listener do PojavLauncher para iniciar o jogo
@@ -300,6 +308,16 @@ public class LauncherActivity extends BaseActivity {
         } catch (Exception e) {
             Toast.makeText(this, "Erro ao iniciar o jogo: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
+    }
+
+    /** Zink só é usado quando o aparelho realmente suporta; senão mantém um renderizador compatível. */
+    private String pickRenderer(String currentRenderer) {
+        if (RendererCompatUtil.checkRendererCompatible(this, PREFERRED_RENDERER)) return PREFERRED_RENDERER;
+        if (Tools.isValidString(currentRenderer) && RendererCompatUtil.checkRendererCompatible(this, currentRenderer)) {
+            return currentRenderer;
+        }
+        List<String> compatibleRenderers = RendererCompatUtil.getCompatibleRenderers(this).rendererIds;
+        return compatibleRenderers.isEmpty() ? LauncherPreferences.PREF_RENDERER : compatibleRenderers.get(0);
     }
 
     @Override

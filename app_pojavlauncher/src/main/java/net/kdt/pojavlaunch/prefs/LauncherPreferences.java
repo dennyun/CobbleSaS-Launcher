@@ -181,6 +181,47 @@ public class LauncherPreferences {
         return 4096;
     }
 
+    /**
+     * Highest heap size that the device can actually honor right now.
+     * The JVM commits -Xms upfront and still needs room for the JIT, the native heaps,
+     * the graphics driver and Android itself, so anything above the currently free
+     * memory gets the game process killed by the low memory killer mid-load.
+     * @param ctx Context needed to query the device memory.
+     * @return The highest safe allocation, in MB.
+     */
+    public static int findMaxSafeRAMAllocation(Context ctx) {
+        int deviceRam = Tools.getTotalDeviceMemory(ctx);
+        int maxRam;
+        if (is32BitsDevice() || deviceRam < 2048) maxRam = Math.min(1024, deviceRam);
+        else maxRam = deviceRam - (deviceRam < 3064 ? 800 : 1024);
+
+        int freeRam = Tools.getFreeDeviceMemory(ctx);
+        if (freeRam > 0) maxRam = Math.min(maxRam, freeRam - 512);
+
+        int addressSpace = Tools.getMaxContinuousAddressSpaceSize();
+        if (addressSpace > 0) maxRam = Math.min(maxRam, addressSpace - 512);
+
+        return Math.max(512, maxRam);
+    }
+
+    /**
+     * Brings the stored allocation back into the range the device can honor and applies it
+     * to the running launcher, so a value saved while more memory was available (or on another
+     * device) cannot make the game get killed on the next launch.
+     * @param ctx Context needed to query the device memory.
+     * @return The allocation that will be used, in MB.
+     */
+    public static int clampRAMAllocation(Context ctx) {
+        int maxRam = findMaxSafeRAMAllocation(ctx);
+        int allocation = DEFAULT_PREF.getInt("allocation", findBestRAMAllocation(ctx));
+        if (allocation > maxRam) {
+            allocation = maxRam;
+            DEFAULT_PREF.edit().putInt("allocation", allocation).apply();
+        }
+        PREF_RAM_ALLOCATION = allocation;
+        return allocation;
+    }
+
     /// Find a correct resolution for the device
     ///
     /// Some devices are shipped with a ridiculously high resolution, which can cause performance issues
