@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/dialog_ram_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Alocação de Memória RAM"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/dialog_ram_val"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Memória: 4.0 GB"
+        android:textColor="#A78BFA"
+        android:textSize="14sp" />
+
+    <SeekBar
+        android:id="@+id/dialog_ram_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Ajuste a quantidade de memória RAM dedicada para rodar o Minecraft Java. Mais RAM evita travamentos com mods."
+        android:textColor="#AAAAAA"
+        android:textSize="12sp" />
+
+</LinearLayout>
