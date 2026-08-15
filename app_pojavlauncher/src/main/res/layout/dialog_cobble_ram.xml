@@ -15,6 +15,15 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
+    <android.widget.Switch
+        android:id="@+id/dialog_ram_auto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Ajuste automático"
+        android:textColor="@android:color/white"
+        android:textSize="14sp" />
+
     <TextView
         android:id="@+id/dialog_ram_val"
         android:layout_width="wrap_content"
@@ -31,6 +40,7 @@
         android:layout_marginTop="16dp" />
 
     <TextView
+        android:id="@+id/dialog_ram_hint"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"

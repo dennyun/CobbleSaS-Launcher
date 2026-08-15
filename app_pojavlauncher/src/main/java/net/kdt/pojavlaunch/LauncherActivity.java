@@ -56,7 +56,7 @@ import net.kdt.pojavlaunch.R;
 
 public class LauncherActivity extends BaseActivity {
     public static final String SETTING_FRAGMENT_TAG = "SETTINGS_FRAGMENT";
-    private static final int MIN_RAM_ALLOCATION = 512;
+    private static final int MIN_RAM_ALLOCATION = LauncherPreferences.MIN_RAM_ALLOCATION;
     private static final String PREFERRED_RENDERER = "vulkan_zink";
 
     private com.kdt.mcgui.MineEditText mNicknameInput;
@@ -189,23 +189,25 @@ public class LauncherActivity extends BaseActivity {
         // O heap não pode passar do que o aparelho consegue entregar agora: acima disso o
         // Android mata o processo do jogo durante o carregamento do modpack.
         final int maxRAM = Math.max(MIN_RAM_ALLOCATION, LauncherPreferences.findMaxSafeRAMAllocation(this));
+        final int autoRAM = Math.max(MIN_RAM_ALLOCATION, LauncherPreferences.findAutoRAMAllocation(this));
         int savedRam = prefs.getInt("allocation", LauncherPreferences.findBestRAMAllocation(this));
         final int currentSelectedRam = Math.max(MIN_RAM_ALLOCATION, Math.min(savedRam, maxRAM));
 
         android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_cobble_ram, null);
         final android.widget.TextView txtVal = dialogView.findViewById(R.id.dialog_ram_val);
+        final android.widget.TextView txtHint = dialogView.findViewById(R.id.dialog_ram_hint);
         final android.widget.SeekBar seekBar = dialogView.findViewById(R.id.dialog_ram_seekbar);
+        final android.widget.Switch swAuto = dialogView.findViewById(R.id.dialog_ram_auto);
 
-        txtVal.setText("Memória: " + String.format("%.1f GB", currentSelectedRam / 1024f) + " (" + currentSelectedRam + " MB)");
-        
         seekBar.setMax(maxRAM - MIN_RAM_ALLOCATION);
         seekBar.setProgress(currentSelectedRam - MIN_RAM_ALLOCATION);
+        txtHint.setText(buildRamHint(maxRAM, autoRAM));
 
         seekBar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                int selectedVal = progress + MIN_RAM_ALLOCATION;
-                txtVal.setText("Memória: " + String.format("%.1f GB", selectedVal / 1024f) + " (" + selectedVal + " MB)");
+                if (fromUser) swAuto.setChecked(false);
+                txtVal.setText(formatRamLabel(progress + MIN_RAM_ALLOCATION, swAuto.isChecked()));
             }
 
             @Override
@@ -215,16 +217,44 @@ public class LauncherActivity extends BaseActivity {
             public void onStopTrackingTouch(android.widget.SeekBar sb) {}
         });
 
+        swAuto.setOnCheckedChangeListener((button, checked) -> {
+            seekBar.setEnabled(!checked);
+            if (checked) seekBar.setProgress(autoRAM - MIN_RAM_ALLOCATION);
+            txtVal.setText(formatRamLabel(seekBar.getProgress() + MIN_RAM_ALLOCATION, checked));
+        });
+        swAuto.setChecked(LauncherPreferences.isAutoRAMEnabled());
+        seekBar.setEnabled(!swAuto.isChecked());
+        txtVal.setText(formatRamLabel(seekBar.getProgress() + MIN_RAM_ALLOCATION, swAuto.isChecked()));
+
         new AlertDialog.Builder(this)
                 .setView(dialogView)
                 .setPositiveButton("Salvar", (dialog, which) -> {
-                    int finalRam = seekBar.getProgress() + MIN_RAM_ALLOCATION;
-                    prefs.edit().putInt("allocation", finalRam).apply();
-                    LauncherPreferences.PREF_RAM_ALLOCATION = finalRam;
-                    Toast.makeText(this, "RAM configurada: " + finalRam + " MB", Toast.LENGTH_SHORT).show();
+                    LauncherPreferences.setAutoRAMEnabled(swAuto.isChecked());
+                    if (!swAuto.isChecked()) {
+                        prefs.edit().putInt("allocation", seekBar.getProgress() + MIN_RAM_ALLOCATION).apply();
+                    }
+                    int finalRam = LauncherPreferences.resolveRAMAllocation(this);
+                    Toast.makeText(this, "RAM configurada: " + finalRam + " MB"
+                            + (swAuto.isChecked() ? " (automático)" : ""), Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
+    }
+
+    private String formatRamLabel(int ram, boolean auto) {
+        return "Memória: " + String.format("%.1f GB", ram / 1024f) + " (" + ram + " MB)"
+                + (auto ? " — automático" : "");
+    }
+
+    private String buildRamHint(int maxRAM, int autoRAM) {
+        String hint = "Aparelho: " + Tools.getTotalDeviceMemory(this) + " MB no total, "
+                + Tools.getFreeDeviceMemory(this) + " MB livres agora. Máximo seguro: " + maxRAM + " MB.";
+        if (autoRAM < LauncherPreferences.RECOMMENDED_RAM_ALLOCATION) {
+            hint += "\nO modpack recomenda " + LauncherPreferences.RECOMMENDED_RAM_ALLOCATION
+                    + " MB, mas este aparelho não tem essa memória livre — pedir mais do que ele aguenta"
+                    + " faz o Android encerrar o jogo durante o carregamento. Feche outros apps para liberar RAM.";
+        }
+        return hint;
     }
 
     private void handlePlayClick() {
@@ -238,7 +268,7 @@ public class LauncherActivity extends BaseActivity {
         mNicknameInput.setEnabled(false);
         mProgressPanel.setVisibility(View.VISIBLE);
 
-        int ramAllocation = LauncherPreferences.clampRAMAllocation(this);
+        int ramAllocation = LauncherPreferences.resolveRAMAllocation(this);
         Log.i("CobbleLauncher", "RAM alocada: " + ramAllocation + " MB (livre: " + Tools.getFreeDeviceMemory(this)
                 + " MB, total: " + Tools.getTotalDeviceMemory(this) + " MB)");
 

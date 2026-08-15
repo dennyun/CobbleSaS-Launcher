@@ -257,7 +257,7 @@ public class CobbleUpdater {
         File profilesFile = new File(Tools.DIR_GAME_NEW, "launcher_profiles.json");
         
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        int ramAllocated = net.kdt.pojavlaunch.prefs.LauncherPreferences.clampRAMAllocation(context); // Alocação de RAM
+        int ramAllocated = net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveRAMAllocation(context); // Alocação de RAM
 
         String profileId = "CobbleSaS-Mobile";
         String fabricVersion = "fabric-loader-" + manifest.fabric_loader_version + "-" + manifest.minecraft_version;

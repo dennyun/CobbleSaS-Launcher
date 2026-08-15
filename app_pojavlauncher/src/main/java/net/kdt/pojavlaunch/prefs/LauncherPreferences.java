@@ -43,6 +43,10 @@ public class LauncherPreferences {
     public static boolean PREF_DISABLE_SWAP_HAND = false;
     public static float PREF_MOUSESPEED = 1f;
     public static int PREF_RAM_ALLOCATION;
+    /** Heap the CobbleSaS modpack asks for; the automatic mode never goes above it. */
+    public static final int RECOMMENDED_RAM_ALLOCATION = 4096;
+    public static final int MIN_RAM_ALLOCATION = 512;
+    private static final String PREF_KEY_AUTO_RAM = "cobbleAutoRam";
     public static String PREF_DEFAULT_RUNTIME;
     public static boolean PREF_SUSTAINED_PERFORMANCE = false;
     public static boolean PREF_VIRTUAL_MOUSE_START = false;
@@ -104,7 +108,7 @@ public class LauncherPreferences {
                 .putBoolean("ram_allocation_optimized_v2", true)
                 .apply();
         }
-        PREF_RAM_ALLOCATION = DEFAULT_PREF.getInt("allocation", findBestRAMAllocation(ctx));
+        resolveRAMAllocation(ctx);
         PREF_CUSTOM_JAVA_ARGS = DEFAULT_PREF.getString("javaArgs", "");
         PREF_SUSTAINED_PERFORMANCE = DEFAULT_PREF.getBoolean("sustainedPerformance", isDevicePowerful);
         PREF_VIRTUAL_MOUSE_START = DEFAULT_PREF.getBoolean("mouse_start", false);
@@ -205,17 +209,42 @@ public class LauncherPreferences {
     }
 
     /**
-     * Brings the stored allocation back into the range the device can honor and applies it
-     * to the running launcher, so a value saved while more memory was available (or on another
-     * device) cannot make the game get killed on the next launch.
+     * Allocation picked by the automatic mode: as close to what the modpack asks for as the
+     * device can honor right now, never above it because a bigger heap only makes the GC and
+     * Android itself struggle.
+     * @param ctx Context needed to query the device memory.
+     * @return The automatic allocation, in MB.
+     */
+    public static int findAutoRAMAllocation(Context ctx) {
+        return Math.min(RECOMMENDED_RAM_ALLOCATION, findMaxSafeRAMAllocation(ctx));
+    }
+
+    public static boolean isAutoRAMEnabled() {
+        return DEFAULT_PREF.getBoolean(PREF_KEY_AUTO_RAM, true);
+    }
+
+    public static void setAutoRAMEnabled(boolean enabled) {
+        DEFAULT_PREF.edit().putBoolean(PREF_KEY_AUTO_RAM, enabled).apply();
+    }
+
+    /**
+     * Decides the allocation for the next launch: recomputed from the device state in automatic
+     * mode, or the user value brought back into the range the device can honor. Persists it so a
+     * value saved while more memory was available (or on another device) cannot make the game get
+     * killed on the next launch.
      * @param ctx Context needed to query the device memory.
      * @return The allocation that will be used, in MB.
      */
-    public static int clampRAMAllocation(Context ctx) {
+    public static int resolveRAMAllocation(Context ctx) {
         int maxRam = findMaxSafeRAMAllocation(ctx);
-        int allocation = DEFAULT_PREF.getInt("allocation", findBestRAMAllocation(ctx));
-        if (allocation > maxRam) {
-            allocation = maxRam;
+        int allocation;
+        if (isAutoRAMEnabled()) {
+            allocation = findAutoRAMAllocation(ctx);
+        } else {
+            allocation = DEFAULT_PREF.getInt("allocation", findBestRAMAllocation(ctx));
+            allocation = Math.max(MIN_RAM_ALLOCATION, Math.min(allocation, maxRam));
+        }
+        if (allocation != DEFAULT_PREF.getInt("allocation", -1)) {
             DEFAULT_PREF.edit().putInt("allocation", allocation).apply();
         }
         PREF_RAM_ALLOCATION = allocation;
