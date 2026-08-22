@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CobbleSaS Mobile</string>
+    <string name="title_activity_main">CobbleSaS Mobile</string>
+    <string name="package_name">com.cobblesas.launcher</string>
+    <string name="custom_url_scheme">com.cobblesas.launcher</string>
+</resources>

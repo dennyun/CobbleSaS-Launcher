@@ -270,12 +270,7 @@ async function init() {
     else if (result.action_state === 'install') displayVersion = 'Pendente';
     
     let displayChangelog = result.manifest.changelog;
-    if (result.action_state === 'update') {
-      try {
-        const stored = localStorage.getItem('localChangelog');
-        if (stored) displayChangelog = JSON.parse(stored);
-      } catch(e) {}
-    } else if (result.action_state === 'install') {
+    if (result.action_state === 'install') {
       displayChangelog = ['Instalação pendente... Atualize para ver as novidades!'];
     }
     
@@ -303,12 +298,7 @@ async function init() {
             if (recheck.action_state === 'update') displayVersion = recheck.localVersion;
             else if (recheck.action_state === 'install') displayVersion = 'Pendente';
             let displayChangelog = recheck.manifest.changelog;
-            if (recheck.action_state === 'update') {
-              try {
-                const stored = localStorage.getItem('localChangelog');
-                if (stored) displayChangelog = JSON.parse(stored);
-              } catch(e) {}
-            } else if (recheck.action_state === 'install') {
+            if (recheck.action_state === 'install') {
               displayChangelog = ['Instalação pendente... Atualize para ver as novidades!'];
             }
             
@@ -418,12 +408,7 @@ async function doPlay() {
     else if (recheck.action_state === 'install') displayVersion = 'Pendente';
     
     let displayChangelog = recheck.manifest.changelog;
-    if (recheck.action_state === 'update') {
-      try {
-        const stored = localStorage.getItem('localChangelog');
-        if (stored) displayChangelog = JSON.parse(stored);
-      } catch(e) {}
-    } else if (recheck.action_state === 'install') {
+    if (recheck.action_state === 'install') {
       displayChangelog = ['Instalação pendente... Atualize para ver as novidades!'];
     }
     
@@ -500,33 +485,44 @@ async function fetchServerStatus() {
   const statusBox = document.getElementById('server-status-box');
   const indicator = document.getElementById('status-indicator');
   const playersText = document.getElementById('status-players');
-  // Puxa o IP do manifest, ou usa o padrão caso não exista
   const ip = (currentManifest && currentManifest.server_ip) ? currentManifest.server_ip : 'jogar.cobblesas.com.br';
 
   statusBox.classList.remove('hidden');
 
+  let isOnline = false;
+  let onlinePlayers = 0;
+  let maxPlayers = 0;
+
   try {
-    // A API do mcstatus.io tem um cache super curto (1 min) tornando o número de jogadores bem mais fiel à realidade.
-    // Usamos um parametro de tempo para evitar cache no nosso navegador
-    const res = await fetch(`https://api.mcstatus.io/v2/status/java/${ip}?t=${new Date().getTime()}`);
-    const data = await res.json();
-
-    indicator.className = 'dot-pulse'; // Reset
-
-    if (data.online) {
-      indicator.classList.add('online');
-      // [SEC] Prevenção de XSS forçando tipagem numérica
-      const pOnline = Number(data.players.online) || 0;
-      const pMax = Number(data.players.max) || 0;
-      playersText.innerHTML = `Online — <span class="highlight">${pOnline}/${pMax}</span> jogadores`;
-    } else {
-      indicator.classList.add('offline');
-      playersText.textContent = 'Offline — Servidor em manutenção';
+    const res1 = await fetch(`https://api.mcstatus.io/v2/status/java/${ip}?t=${Date.now()}`);
+    const data1 = await res1.json();
+    if (data1 && data1.online) {
+      isOnline = true;
+      onlinePlayers = Number(data1.players?.online) || 0;
+      maxPlayers = Number(data1.players?.max) || 0;
     }
-  } catch (error) {
+  } catch (e) {}
+
+  if (!isOnline) {
+    try {
+      const res2 = await fetch(`https://api.mcsrvstat.us/2/${ip}`);
+      const data2 = await res2.json();
+      if (data2 && data2.online) {
+        isOnline = true;
+        onlinePlayers = Number(data2.players?.online) || 0;
+        maxPlayers = Number(data2.players?.max) || 0;
+      }
+    } catch (e) {}
+  }
+
+  indicator.className = 'dot-pulse';
+
+  if (isOnline) {
+    indicator.classList.add('online');
+    playersText.innerHTML = `Online — <span class="highlight">${onlinePlayers}/${maxPlayers}</span> jogadores`;
+  } else {
     indicator.classList.add('offline');
-    playersText.textContent = 'Servidor indisponível';
-    console.error('Erro ao buscar status do servidor:', error);
+    playersText.textContent = 'Offline — Servidor em manutenção';
   }
 }
 

@@ -1,0 +1,10 @@
+{
+  "appId": "com.cobblesas.launcher",
+  "appName": "CobbleSaS Mobile",
+  "webDir": "www",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

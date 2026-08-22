@@ -9,5 +9,6 @@
     "[FIX] Corrigida incompatibilidade de mods com Fabric antigo",
     "[+] Cobblemon e mods atualizados"
   ],
-  "download_url": "https://github.com/f4xizzz/cobblesas-modpack/releases/download/06-06/modpack.zip"
+  "download_url": "https://github.com/f4xizzz/cobblesas-modpack/releases/download/06-06/modpack.zip",
+  "server_ip": "jogar.cobblesas.com.br"
 }
