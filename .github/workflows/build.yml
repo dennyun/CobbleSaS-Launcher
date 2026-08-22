@@ -8,21 +8,24 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
     
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout Código
+    - name: Checkout Codigo
       uses: actions/checkout@v4
+      with:
+        submodules: false
 
     - name: Configurar Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: 22
 
-    - name: Instalar Dependências
+    - name: Instalar Dependencias
       run: npm install
 
     - name: Criar pastas de saida

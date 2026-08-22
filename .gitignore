@@ -3,4 +3,7 @@ dist/
 .DS_Store
 *.log
 upload_to_github.bat
-# Force CI Trigger
+*.bak
+fork/
+mobile/
+
