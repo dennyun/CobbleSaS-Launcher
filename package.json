@@ -16,6 +16,9 @@
   "build": {
     "appId": "com.cobblesas.cobblesas-launcher",
     "productName": "CobbleSaS Launcher",
+    "directories": {
+      "buildResources": "assets"
+    },
     "win": {
       "target": [
         "nsis",
@@ -29,7 +32,7 @@
         "dmg",
         "zip"
       ],
-      "icon": "assets/icon.png",
+      "icon": "assets/icon.icns",
       "artifactName": "Mac/${productName}-macOS-${version}.${ext}",
       "identity": null
     },
@@ -61,6 +64,5 @@
     "electron": "^29.0.0",
     "electron-builder": "^24.9.1"
   },
-  "author": "CobbleSaS",
   "license": "MIT"
 }
