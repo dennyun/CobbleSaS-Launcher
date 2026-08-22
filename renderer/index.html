@@ -14,7 +14,7 @@
   <!-- Barra de título customizada -->
   <div id="titlebar">
     <div id="titlebar-drag">
-      <img src="../assets/icon.png" alt="CobbleSaS" id="titlebar-icon" onerror="this.style.display='none'" />
+      <img src="assets/icon.png" alt="CobbleSaS" id="titlebar-icon" onerror="if(this.src!=='../assets/icon.png')this.src='../assets/icon.png';" />
       <span id="titlebar-name">CobbleSaS Launcher</span>
     </div>
     <div id="titlebar-buttons">
@@ -23,7 +23,7 @@
     </div>
   </div>
 
-  <!-- ─── Overlay: Configurações (RAM, Resolução) ─────────────────────────── -->
+  <!-- Overlay: Configurações (RAM, Resolução) -->
   <div id="settings-overlay" class="hidden">
     <div id="settings-modal">
       <h2 id="settings-modal-title">Configurações do Jogo</h2>
@@ -62,16 +62,15 @@
       <div class="setting-row">
         <label for="ram-select">Memória Máxima (RAM)</label>
         <select id="ram-select">
-          <!-- Será preenchido via JavaScript dinamicamente -->
           <option value="AUTO">AUTO</option>
         </select>
       </div>
 
-      <button id="btn-close-settings">Salvar e Fechar ✔</button>
+      <button id="btn-close-settings">Salvar e Fechar</button>
     </div>
   </div>
 
-  <!-- ─── Overlay: Primeira Configuração (First-Time Setup) ───────────────── -->
+  <!-- Overlay: Primeira Configuração (First-Time Setup) -->
   <div id="setup-overlay" class="hidden">
     <div id="settings-modal" style="text-align: center;">
       <h2 id="settings-modal-title" style="margin-bottom: 10px;">Bem-vindo ao Launcher!</h2>
@@ -84,14 +83,14 @@
         </div>
       </div>
 
-      <button id="btn-finish-setup" style="margin-top: 20px;">Confirmar e Continuar ✔</button>
+      <button id="btn-finish-setup" style="margin-top: 20px;">Confirmar e Continuar</button>
     </div>
   </div>
 
-  <!-- ─── Overlay: Tela de Loading (Estilo SKLauncher) ────────────────────── -->
+  <!-- Overlay: Tela de Loading -->
   <div id="download-overlay" class="hidden">
     <div id="download-modal">
-      <img src="../assets/icon.png" alt="Icon" id="download-icon" style="width: 48px;" />
+      <img src="assets/icon.png" alt="Icon" id="download-icon" style="width: 48px;" onerror="if(this.src!=='../assets/icon.png')this.src='../assets/icon.png';" />
       
       <div id="download-progress-track">
         <div id="download-progress-fill"></div>
@@ -110,12 +109,12 @@
     <!-- Painel esquerdo: logo + info -->
     <aside id="panel-left">
       <div id="logo-container">
-        <img id="logo" src="../assets/icon.png" alt="Cobblemon" onerror="this.style.display='none'" />
+        <img id="logo" src="assets/icon.png" alt="CobbleSaS" onerror="if(this.src!=='../assets/icon.png')this.src='../assets/icon.png';" />
         <div id="logo-glow"></div>
       </div>
 
       <div id="server-info">
-        <h1 id="pack-name">Cobblemon Pack</h1>
+        <h1 id="pack-name">CobbleSaS Pack</h1>
         <div id="version-badges">
           <span class="badge badge-mc" id="badge-mc">MC 1.21.1</span>
           <span class="badge badge-fabric" id="badge-fabric">Fabric</span>
@@ -125,7 +124,7 @@
         <div id="auth-panel">
           
           <div id="auth-box">
-            <img id="user-avatar" src="https://minotar.net/helm/Steve/32.png" alt="Avatar" onerror="this.onerror=null; this.src='../assets/icon.png';" />
+            <img id="user-avatar" src="https://minotar.net/helm/Steve/32.png" alt="Avatar" onerror="this.onerror=null; this.src='assets/icon.png';" />
             <input type="text" id="nickname-input" placeholder="Seu Nickname" maxlength="16" minlength="3" pattern="[a-zA-Z0-9_]+" title="Apenas letras, números e underlines. Sem espaços." list="recent-nicks" autocomplete="off" spellcheck="false" />
             <datalist id="recent-nicks"></datalist>
           </div>
@@ -176,11 +175,11 @@
       <!-- Botão principal -->
       <div id="action-area">
         <button id="btn-action" class="disabled" disabled>
-          <span id="btn-icon">⏳</span>
+          <span id="btn-icon">⚡</span>
           <span id="btn-text">Verificando...</span>
         </button>
-        <button id="btn-repair" class="icon-btn" title="Reparar e verificar integridade da instalação">🛠️</button>
-        <button id="btn-mods-folder" class="icon-btn" title="Abrir pasta do jogo (.cobblesas)">📂</button>
+        <button id="btn-repair" class="icon-btn" title="Reparar e verificar integridade da instalação">🔄</button>
+        <button id="btn-mods-folder" class="icon-btn" title="Abrir pasta do jogo (.cobblesas)">📁</button>
       </div>
 
     </section>
