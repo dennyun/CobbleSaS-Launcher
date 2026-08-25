@@ -33,20 +33,30 @@ function getJavaVersion(javaPath) {
 
 // Procura por instalações do Java 21 automaticamente
 async function autoFindJava21() {
-  if (os.platform() !== 'win32' && os.platform() !== 'linux') return null;
-
   const isWindows = os.platform() === 'win32';
+  const isMac = os.platform() === 'darwin';
+
   const commonPaths = isWindows ? [
-    'C:\\Program Files\\Java',
+    path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'Eclipse Adoptium'),
+    path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'Java'),
+    path.join(getRootDir(), 'runtime', 'java-21'),
     'C:\\Program Files\\Eclipse Adoptium',
+    'C:\\Program Files\\Java',
     'C:\\Program Files\\Microsoft',
     'C:\\Program Files\\Amazon Corretto',
-    'C:\\Program Files\\BellSoft'
+    'C:\\Program Files\\BellSoft',
+    'C:\\Program Files\\Zulu',
+    'C:\\Program Files (x86)\\Eclipse Adoptium',
+    'C:\\Program Files (x86)\\Java'
+  ] : (isMac ? [
+    '/Library/Java/JavaVirtualMachines',
+    path.join(getRootDir(), 'runtime', 'java-21')
   ] : [
     '/usr/lib/jvm',
     '/usr/java',
-    '/opt/java'
-  ];
+    '/opt/java',
+    path.join(getRootDir(), 'runtime', 'java-21')
+  ]);
 
   let possibleJavas = [];
 
@@ -61,13 +71,17 @@ async function autoFindJava21() {
       try {
         const subDirs = fs.readdirSync(baseDir);
         for (const subDir of subDirs) {
+          const subPath = path.join(baseDir, subDir);
           if (isWindows) {
-            const javaPath = path.join(baseDir, subDir, 'bin', 'javaw.exe');
-            const javaExePath = path.join(baseDir, subDir, 'bin', 'java.exe');
+            const javaPath = path.join(subPath, 'bin', 'javaw.exe');
+            const javaExePath = path.join(subPath, 'bin', 'java.exe');
             if (fs.existsSync(javaPath)) possibleJavas.push(javaPath);
             else if (fs.existsSync(javaExePath)) possibleJavas.push(javaExePath);
+          } else if (isMac) {
+            const javaPath = path.join(subPath, 'Contents', 'Home', 'bin', 'java');
+            if (fs.existsSync(javaPath)) possibleJavas.push(javaPath);
           } else {
-            const javaPath = path.join(baseDir, subDir, 'bin', 'java');
+            const javaPath = path.join(subPath, 'bin', 'java');
             if (fs.existsSync(javaPath)) possibleJavas.push(javaPath);
           }
         }
@@ -75,10 +89,10 @@ async function autoFindJava21() {
     }
   }
 
-  // Testa cada executável encontrado para ver se é 21+
+  // Testa cada executável encontrado para ver se é ESTRITAMENTE a versão 21
   for (const jPath of possibleJavas) {
     const version = await getJavaVersion(jPath);
-    if (version >= 21) {
+    if (version === 21) {
       return jPath;
     }
   }
@@ -243,9 +257,10 @@ class CoreLauncher {
 
   async ensureJava21() {
     let javaPath = store.get('javaPath', null);
-    let javaVersion = await getJavaVersion(javaPath);
+    let javaVersion = javaPath ? await getJavaVersion(javaPath) : 0;
     
-    if (javaVersion < 21) {
+    // Se o javaPath configurado não for EXATAMENTE a versão 21, procura ou baixa
+    if (javaVersion !== 21) {
       const autoFoundPath = await autoFindJava21();
       if (autoFoundPath) {
         javaPath = autoFoundPath;
@@ -254,27 +269,26 @@ class CoreLauncher {
       }
     }
 
-    if (javaVersion < 21) {
+    if (javaVersion !== 21) {
       try {
-        this.sendProgress({ task: 'Baixando Java 21... Por favor, aguarde.', current: 0, total: 100 });
+        this.sendProgress({ task: 'Baixando Java 21 LTS... Por favor, aguarde.', current: 0, total: 100 });
         const downloadedPath = await downloadAndInstallJava21((p) => {
           if (p === 'EXTRAINDO') {
-            this.sendProgress({ task: 'Instalando Java 21...', current: 99, total: 100 });
+            this.sendProgress({ task: 'Instalando Java 21 LTS...', current: 99, total: 100 });
           } else {
-            this.sendProgress({ task: `Baixando Java 21... (${p}%)`, current: parseFloat(p), total: 100 });
+            this.sendProgress({ task: `Baixando Java 21 LTS... (${p}%)`, current: parseFloat(p), total: 100 });
           }
         });
         javaPath = downloadedPath;
         javaVersion = await getJavaVersion(javaPath);
+        store.set('javaPath', javaPath);
       } catch(err) {
-         throw new Error(`Tentamos instalar o Java 21 automaticamente, mas houve um erro.\nErro: ${err.message}\nPor favor, instale o Java 21 manualmente (Adoptium) ou aponte o caminho nas Engrenagens.`);
+         throw new Error(`Tentamos instalar o Java 21 automaticamente, mas houve um erro.\nErro: ${err.message}\nPor favor, instale o Java 21 manualmente (Eclipse Adoptium Temurin 21) ou aponte o caminho nas Configurações.`);
       }
     }
 
-    if (javaVersion === 0) {
-      throw new Error("Java não encontrado! O jogo precisa do Java 21 para abrir.\n\nBaixe no site da Oracle ou Adoptium.");
-    } else if (javaVersion < 21) {
-      throw new Error(`O seu PC está usando o Java ${javaVersion}.\n\nO Minecraft 1.21.1 exige Java 21. Instale manualmente ou aponte nas engrenagens.`);
+    if (javaVersion !== 21) {
+      throw new Error(`O Java detectado é a versão ${javaVersion}.\n\nO Cobblemon e o Minecraft 1.21.1 exigem estritamente o Java 21 LTS.\nPor favor, instale o Eclipse Adoptium Temurin 21.`);
     }
 
     return javaPath;
