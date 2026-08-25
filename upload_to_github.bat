@@ -10,7 +10,7 @@ echo        BEM-VINDO AO UPLOADER DO COBBLESAS LAUNCHER
 echo ========================================================
 echo.
 echo Preparando para empacotar e enviar seus arquivos...
-echo Repositorio destino: https://github.com/dennyun/CobbleSaS
+echo Repositorio destino: https://github.com/dennyun/CobbleSaS-Launcher
 echo.
 
 :: Garante que estamos na pasta do script
@@ -30,7 +30,7 @@ git branch -M main >nul 2>&1
 
 :: Configura o caminho do repositorio remoto
 git remote remove origin 2>nul
-git remote add origin https://github.com/dennyun/CobbleSaS.git
+git remote add origin https://github.com/dennyun/CobbleSaS-Launcher.git
 
 :: Adiciona todas as pastas e arquivos modificados
 echo [2/4] Detectando arquivos modificados...
@@ -53,6 +53,6 @@ echo                    UPLOAD CONCLUIDO!
 echo ========================================================
 echo.
 echo Acompanhe a geracao automatica dos executaveis:
-echo https://github.com/dennyun/CobbleSaS/actions
+echo https://github.com/dennyun/CobbleSaS-Launcher/actions
 echo.
 pause
